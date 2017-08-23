@@ -1,0 +1,16 @@
+Package: ANF
+Type: Package
+Title: Affinity Network Fusion for Complex Patient Clustering
+Version: 0.99.0
+Author: Tianle Ma, Aidong Zhang
+Maintainer: Tianle Ma <tianlema@buffalo.edu>
+Description: Integrate multi-omic data through affinity network fusion for complex patient clustering
+License: LGPL (>= 3)
+VignetteBuilder: knitr
+Depends:
+    igraph,
+    Biobase
+Suggests:
+    SNFtool
+biocViews: Clustering, GraphAndNetwork
+RoxygenNote: 6.0.1
