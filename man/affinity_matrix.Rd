@@ -2,7 +2,8 @@
 % Please edit documentation in R/SpectralClustering.R
 \name{affinity_matrix}
 \alias{affinity_matrix}
-\title{Generate a symmetric affinity matrix based on distance matrix using 'local' Gaussian kernel}
+\title{Generate a symmetric affinity matrix based on distance matrix 
+using 'local' Gaussian kernel}
 \usage{
 affinity_matrix(D, k, alpha = 1/6, beta = 1/6)
 }
@@ -19,7 +20,8 @@ affinity_matrix(D, k, alpha = 1/6, beta = 1/6)
 an affinity matrix
 }
 \description{
-Generate a symmetric affinity matrix based on distance matrix using 'local' Gaussian kernel
+Generate a symmetric affinity matrix based on distance matrix 
+using 'local' Gaussian kernel
 }
 \examples{
 D = matrix(runif(400),20)

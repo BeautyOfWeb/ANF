@@ -4,7 +4,7 @@
 \alias{spectral_clustering}
 \title{spectral_clustering}
 \usage{
-spectral_clustering(A, k, type = 2, verbose = F)
+spectral_clustering(A, k, type = 2, verbose = FALSE)
 }
 \arguments{
 \item{A}{affinity matrix}

@@ -1,0 +1,248 @@
+---
+title: "Complex Object (Patient) Clustering with Multi-view Data Using ANF"
+author: "Tianle Ma"
+date: "`r BiocStyle::doc_date()`"
+abstract: Cancer genomics projects have generated tons of multi-omic data. Integrating multi-omic data for patient clustering and cancer subtyping is an important and challenging task. Based a popular method, Similarity Network Fusion (SNF), we present Affinity Network Fusion (ANF) that have several advantages over SNF. The package ANF provides methods for affinity matrix construction and fusion as well as spectral clustering. This vignette explains the basic usage of the package.
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  ---
+  
+  **If you use ANF in published research, please cite:**
+  
+  > Tianle Ma, Aidong Zhang,
+  > Integrate Multi-omic Data Using Affinity Network Fusion (ANF) for Cancer Patient Clustering, 
+  > https://arxiv.org/abs/1708.07136
+  
+  # Basic usage of ANF package (demonstration with synthetic data)
+  
+  In the following, let's first generate a synthetic dataset and use it for demonstrating the basic usage of ANF.
+  
+  For complex objects (e.g., patients) with multi-view data, we can use a feature matrix representing each view. For example, gene expression matrix and miRNA expression matrix can represent two views of patients.
+  
+  In the following, rows of a feature matrix represent objects, and columns represent features. Note each feature matrix contains a number of features from a feature space (corresponding one view). We can concatenate all features together as we will experiment later. However, since features from different feature spaces are usually heterogeneous, it may be a good idea to analyze them in its own feature space first, and then combine the results later.
+  
+  ### Generating the first view (feature matrix) of 200 samples
+  For simplicity, let's generate the first view (matrix `feature1`) of 200 samples: 100 samples for class 1 (the first 100 rows of matrix `feature1`), and 100 samples for class 2 (the last 100 rows of matrix `feature1`), using multi-variate Gaussian distribution.
+  ```{r}
+true.class = rep(c(1,2),each=100)
+feature.mat1 = MASS::mvrnorm(100, rep(0, 20), diag(runif(20,0.2,2)))
+feature.mat2 = MASS::mvrnorm(100, rep(0.5, 20), diag(runif(20,0.2,2)))
+feature1 = rbind(feature.mat1, feature.mat2)
+```
+
+### KMeans and spectral clustering based on only the first view
+Let's perform KMeans clustering. The Normalized Mutual Information (NMI) is only 0.26.
+```{r}
+library(igraph)
+set.seed(1)
+km = kmeans(feature1, 2)
+igraph::compare(km$cluster, true.class, method='nmi')
+```
+
+Let's perform spectral clustering using functions in ANF package. The NMI is 0.29, slightly higher than KMeans.
+```{r}
+library(ANF)
+d = dist(feature1)
+d = as.matrix(d)
+A1 = affinity_matrix(d, 10)
+labels = spectral_clustering(A1, 2)
+igraph::compare(labels, true.class, method='nmi')
+```
+
+### Generating the second view (feature matrix) for the above 200 samples
+Similar to the first view, we can generate a second view (matrix `feature2`). The rows of `feature1` and `feature2` have one-to-one correspondence. 
+```{r}
+feature.mat1 = MASS::mvrnorm(100, rep(10, 30), diag(runif(30,0.2,3)))
+feature.mat2 = MASS::mvrnorm(100, rep(9.5, 30), diag(runif(30,0.2,3)))
+feature2 = rbind(feature.mat1, feature.mat2)
+```
+
+### KMeans and spectral clustering based on only the second view
+Similarly, the NMI of KMeans clustering and spectral clustering are 0.14 (can be different because of random initialization) and 0.19 respectively.
+```{r}
+set.seed(123)
+km = kmeans(feature2, 2)
+igraph::compare(km$cluster, true.class, method='nmi')
+
+d = dist(feature2)
+d = as.matrix(d)
+A2 = affinity_matrix(d, 10)
+labels = spectral_clustering(A2, 2)
+igraph::compare(labels, true.class, method='nmi')
+```
+
+### Concatenate all features from two views and perform KMeans clustering (NMI = 0.58)
+```{r}
+feature.cat = cbind(feature1, feature2)
+set.seed(1)
+km = kmeans(feature.cat, 2)
+igraph::compare(km$cluster, true.class, method='nmi')
+```
+
+### Use ANF for clustering (NMI = 0.76)
+ANF performs better than KMeans on concatenated features
+```{r}
+W = ANF(list(A1, A2), K=30)
+labels = spectral_clustering(W,2)
+igraph::compare(labels, true.class, method='nmi')
+```
+
+# Apply ANF to TCGA data (companion paper: https://arxiv.org/abs/1708.07136)
+
+## Load data 
+`TCGA_5CancerTypes.RData` (https://github.com/BeautyOfWeb/TCGA_5CancerTypes.RData, to be submitted to bioconductor experiment package) contains three R objects: `Wall`, `project_ids` and `survival.plot`:
+
+`Wall` contains lists inside list. In fact, `Wall` a list (five cancer type) of list (six feature normalization types: `raw.all`, `raw.sel`, `log.all`, `log.sel`,  `vst.sel`, `normalized`) of list (three feature spaces or views: `fpkm`, `mirna`, and `methy450`) of matrices. The rownames of each matrix is the submitter_id (can be seen as a patient id), and the column names of each matrix is the aliquot ID (which contains the submitter_id as prefix). Based on these aliquot ID, users can download original data from https://portal.gdc.cancer.gov/repository .
+
+`project_ids` is a named character vector, that maps the submitter_id (represent a patient) to project_id (one-to-one correspond to disease type). This is used for evaluating clustering results, such as calculating NMI and Adjusted Rand Index (ARI).
+
+`survival.plot` is a data.frame containing patient survival data for survival analysis, providing an "indirect" way to evaluate clustering results.
+
+See paper https://arxiv.org/abs/1708.07136 for more explanation.
+```{r}
+download.file("https://github.com/BeautyOfWeb/TCGA_5CancerTypes.RData/raw/master/TCGA_5CancerTypes.RData", destfile = "TCGA_5CancerTypes.RData")
+load("TCGA_5CancerTypes.RData")
+
+cancer_types = names(Wall)
+feature_types = names(Wall[[1]])
+data_types = names(Wall[[1]][[1]])
+```
+
+## Use ANF generate fused affinity matrices
+Let's use ANF to generate fused affinity matrices for clustering these five cancer types into their own disease types. Except kidney cancer, which has three disease types, all four cancer types each have two disease types. 
+Since we have three view, there are seven combinations.
+```{r}
+data_types = c("fpkm","mirnas","methy450")
+tmp = lapply(1:length(data_types), function(i) combn(data_types, i))
+data_types_combn = list()
+for (i in tmp){
+    for(j in 1:ncol(i)){
+        data_types_combn[[paste(i[,j],collapse = ".")]] = i[,j]
+    }
+}
+data_types_combn
+```
+
+We can run ANF for all 210 possible combinations (five cancer_types, six feature normalization measures, and seven data combinations), and store the results in `res.ANF` (this takes several minutes).
+```{r,eval=FALSE}
+Ws.ANF = list()
+res.ANF = list()
+for (cancer_type in cancer_types) {
+    for (feature_type in feature_types) {
+        for (data_type in names(data_types_combn)) {
+            print(paste(cancer_type, feature_type, data_type))
+            W = ANF(Wall[[cancer_type]][[feature_type]][data_types_combn[[data_type]]], K=15)
+            clu.res = eval_clu(project_ids, w=W, surv = surv.plot)
+            Ws.ANF[[cancer_type]][[feature_type]][[data_type]] = W
+            res.ANF[[cancer_type]][[feature_type]][[data_type]] = clu.res$clu.res
+        }
+    }
+}
+```
+
+## p-value of log rank test of survival distributions alone is not sufficient for evaluating clustering quality
+p-value of the log-rank test of survival distributions of different disease types is not a good metric. We use ground truth class labels for survival analysis. p-value for lung and colerectal cancer (both have two disease types) do not reach statistical levels.
+```{r, eval=FALSE}
+library(survival)
+sample_list = list()
+logpval_trueclass = list()
+for (cancer_type in cancer_types){
+    sample_list[[cancer_type]] = rownames(Ws.ANF[[cancer_type]][[1]][[1]])
+    
+    labels = as.factor(project_ids[sample_list[[cancer_type]]])
+    surv = surv.plot[sample_list[[cancer_type]],]
+    f = Surv(surv$time, !surv$censored)
+    fit = survdiff(f~labels)
+    pval = pchisq(fit$chisq, df=length(fit$n)-1, lower.tail = F)
+    print(cancer_type)
+    print(-log10(pval))
+    logpval_trueclass[[cancer_type]] = -log10(pval)
+}
+logpval_trueclass = unlist(logpval_trueclass)
+```
+
+## The power of ANF
+Now let's examine the power of ANF. Save the figures in folder "./figs/power_of_ANF/" (create it if it does not exist)
+```{r, eval=FALSE}
+library(RColorBrewer)
+metric_names = c("NMI", "ARI", "-log10(p)")
+power.anf = list()
+res = res.ANF
+for (idx_feature in 1:length(feature_types)) {
+    for (idx_metric in 1:length(metric_names)) {
+        xtab = array(unlist(res), dim=c(length(res[[1]][[1]][[1]]), length(res[[1]][[1]]), length(res[[1]]), length(res)), dimnames = list(metric_names, names(res[[1]][[1]]), names(res[[1]]), names(res)))
+        
+        power.anf[[feature_types[idx_feature]]][[metric_names[idx_metric]]] = xtab[idx_metric, names(res[[1]][[1]]), idx_feature, cancer_types]
+    }
+}
+
+# Did not show colorectal cancer, since all possible clustering does not achieve a good NMI or ARI. Presumbly for colorectal cancer, the two disease types cannot be separated by gene and miRNA expression and DNA methylation data. Survival analysis also show no significant difference between the two disease types.
+idx_cancer = c(1,2,4,3)
+if(!dir.exists("./figs/power_of_ANF/")) {
+    dir.create("./figs/power_of_ANF/", recursive = T)
+}
+figfolder = "./figs/power_of_ANF/"
+for (idx_feature in 1:length(feature_types)) {
+    for (idx_metric in 1:length(metric_names)) {
+        metric = power.anf[[idx_feature]][[idx_metric]][,idx_cancer]
+        rownames(metric) = c("gene", "mirnas", "methylation", "gene+mirnas","gene+methylation","mirnas+methylation","gene+mirnas+methylation")
+        if (idx_metric!=3) {
+            png(filename = paste0(figfolder,"power_ANF_", feature_types[idx_feature], "_", metric_names[idx_metric],".png"), height = 900, width = 1600, res = 150)
+            barplot(metric, beside = T, col = brewer.pal(nrow(metric), "Set1"), legend.text = T, xlim=c(0,40), ylim = c(0,1),args.legend = list(x = 35, y=1.1,bty = "n"), ylab = metric_names[idx_metric], main = paste("FeatureType:", feature_types[idx_feature]))
+            dev.off()
+        } else {
+            neg_log_p = rbind(metric, logpval_trueclass[colnames(metric)])
+            rownames(neg_log_p)[nrow(neg_log_p)] = "TrueClass"
+            png(filename = paste0(figfolder,"power_ANF_", feature_types[idx_feature], "_pval.png"), height = 900, width = 1600, res = 150)
+            barplot(neg_log_p, beside = T, col = brewer.pal(nrow(neg_log_p), "Set1"), legend.text = T, xlim=c(0,40), ylim=c(0,13), args.legend = list(x = 17,y=14,bty = "n"), ylab = metric_names[idx_metric], main = paste("FeatureType:", feature_types[idx_feature]))
+            dev.off()
+        }
+    }
+}
+```
+
+## The power of feature engineering
+Now demonstrate the power of feature engineering. Save figures in "./figs/power_of_FeatureEngineering". See paper https://arxiv.org/abs/1708.07136 for explaination.
+```{r, eval=FALSE}
+res = res.ANF
+cancer_types = names(res)
+feature_types = names(res[[1]])
+data_types = names(res[[1]][[1]])
+metric_names = c("NMI", "ARI", "-log10(p)")
+
+power.feature = list()
+idx_views = c(1,2,4)
+view_names = c("gene expression", "miRNA expression", "gene+miRNA")
+for (idx_view in idx_views) {
+    for (idx_metric in 1:length(metric_names)) {
+        xtab = array(unlist(res), dim=c(length(res[[1]][[1]][[1]]), length(res[[1]][[1]]), length(res[[1]]), length(res)), dimnames = list(metric_names, names(res[[1]][[1]]), names(res[[1]]), names(res)))
+        power.feature[[data_types[idx_view]]][[metric_names[idx_metric]]] = xtab[idx_metric, idx_view, feature_types, cancer_types]
+    }
+}
+
+idx_cancers = c(1,2,4,3)
+idx_features = c(1,6,2:5)
+if(!dir.exists("./figs/power_of_FeatureEngineering/")) {
+    dir.create("./figs/power_of_FeatureEngineering/", recursive = T)
+}
+figfolder = "./figs/power_of_FeatureEngineering/"
+for (idx_view in 1:length(idx_views)) {
+    for (idx_metric in 1:length(metric_names)) {
+        metric = power.feature[[idx_view]][[idx_metric]][idx_features,idx_cancers]
+        if (idx_metric!=3) {
+            png(filename = paste0(figfolder,"power_feature_", data_types[idx_views[idx_view]], "_", metric_names[idx_metric],".png"), height = 900, width = 1600, res = 150)
+            barplot(metric, beside = T, col = brewer.pal(nrow(metric), "Set1"), legend.text = T, xlim=c(0,30), ylim=c(0,1), args.legend = list(x=30,y=1, bty = "n"), ylab = metric_names[idx_metric], main = paste("DataType(s):", view_names[idx_view]))
+            dev.off()
+        } else {
+            neg_log_p = rbind(metric, logpval_trueclass[colnames(metric)])
+            rownames(neg_log_p)[nrow(neg_log_p)] = "TrueClass"
+            png(filename = paste0(figfolder,"power_feature_", data_types[idx_views[idx_view]], "_pval.png"), height = 900, width = 1600, res = 150)
+            barplot(neg_log_p, beside = T, col = brewer.pal(nrow(neg_log_p), "Set1"), legend.text = T, xlim=c(0,35),  ylim=c(0,12), args.legend = list(x=20,y=13, bty = "n"), ylab = metric_names[idx_metric], main = paste("DataType(s):", view_names[idx_view]))
+            dev.off()
+        }
+    }
+}
+```

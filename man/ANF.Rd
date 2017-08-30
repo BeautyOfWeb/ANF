@@ -5,7 +5,7 @@
 \title{Fuse affinity networks through one-step or two-step random walk}
 \usage{
 ANF(Wall, K = 20, weight = NULL, type = 2, alpha = c(1, 1, 0, 0, 0, 0,
-  0, 0), verbose = F)
+  0, 0), verbose = FALSE)
 }
 \arguments{
 \item{Wall}{a list of affinity matrices of the same shape}

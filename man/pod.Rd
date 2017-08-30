@@ -4,7 +4,7 @@
 \alias{pod}
 \title{Finding optimal discrete solutions for spectral clustering}
 \usage{
-pod(Y, verbose = F)
+pod(Y, verbose = FALSE)
 }
 \arguments{
 \item{Y}{first k eigenvectors of graph Laplacian corresponding to k smallest eigenvalues}

@@ -5,7 +5,7 @@
 \title{Evaluate cluster result}
 \usage{
 eval_clu(true_class, w = NULL, d = NULL, k = 10, num_clu = NULL,
-  surv = NULL, type_L = 2, verbose = T)
+  surv = NULL, type_L = 2, verbose = TRUE)
 }
 \arguments{
 \item{true_class}{A named vector of true class labels}
@@ -33,4 +33,14 @@ and -log10(p) of log rank test of survival distributions of patient clusters
 }
 \description{
 Evaluate cluster result
+}
+\examples{
+true.class = rep(c(1,2),each=100)
+feature.mat1 = MASS::mvrnorm(100, rep(0, 20), diag(runif(20,0.2,2)))
+feature.mat2 = MASS::mvrnorm(100, rep(0.5, 20), diag(runif(20,0.2,2)))
+feature1 = rbind(feature.mat1, feature.mat2)
+d = dist(feature1)
+d = as.matrix(d)
+A = affinity_matrix(d, 10)
+res = eval_clu(true_class=true.class, w=A)
 }
