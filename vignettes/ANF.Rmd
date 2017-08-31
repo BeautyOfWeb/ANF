@@ -93,18 +93,22 @@ igraph::compare(labels, true.class, method='nmi')
 # Apply ANF to TCGA data (companion paper: https://arxiv.org/abs/1708.07136)
 
 ## Load data 
-`TCGA_5CancerTypes.RData` (https://github.com/BeautyOfWeb/TCGA_5CancerTypes.RData, to be submitted to bioconductor experiment package) contains three R objects: `Wall`, `project_ids` and `survival.plot`:
+`HarmonizedTCGAData` (https://github.com/BeautyOfWeb/HarmonizedTCGAData, to be submitted to bioconductor experiment data package) contains three R objects: `Wall`, `project_ids` and `surv.plot`:
 
 `Wall` contains lists inside list. In fact, `Wall` a list (five cancer type) of list (six feature normalization types: `raw.all`, `raw.sel`, `log.all`, `log.sel`,  `vst.sel`, `normalized`) of list (three feature spaces or views: `fpkm`, `mirna`, and `methy450`) of matrices. The rownames of each matrix is the submitter_id (can be seen as a patient id), and the column names of each matrix is the aliquot ID (which contains the submitter_id as prefix). Based on these aliquot ID, users can download original data from https://portal.gdc.cancer.gov/repository .
 
 `project_ids` is a named character vector, that maps the submitter_id (represent a patient) to project_id (one-to-one correspond to disease type). This is used for evaluating clustering results, such as calculating NMI and Adjusted Rand Index (ARI).
 
-`survival.plot` is a data.frame containing patient survival data for survival analysis, providing an "indirect" way to evaluate clustering results.
+`surv.plot` is a data.frame containing patient survival data for survival analysis, providing an "indirect" way to evaluate clustering results.
 
 See paper https://arxiv.org/abs/1708.07136 for more explanation.
-```{r}
-download.file("https://github.com/BeautyOfWeb/TCGA_5CancerTypes.RData/raw/master/TCGA_5CancerTypes.RData", destfile = "TCGA_5CancerTypes.RData")
-load("TCGA_5CancerTypes.RData")
+```{r, eval=FALSE}
+download.file("https://github.com/BeautyOfWeb/HarmonizedTCGAData/raw/master/data/Wall.rda", destfile = "Wall.RData")
+load("Wall.RData")
+download.file("https://github.com/BeautyOfWeb/HarmonizedTCGAData/raw/master/data/project_ids.rda", destfile = "project_ids.RData")
+load("project_ids.RData")
+download.file("https://github.com/BeautyOfWeb/HarmonizedTCGAData/raw/master/data/surv.plot.rda", destfile = "surv.plot.RData")
+load("surv.plot.RData")
 
 cancer_types = names(Wall)
 feature_types = names(Wall[[1]])
@@ -114,7 +118,7 @@ data_types = names(Wall[[1]][[1]])
 ## Use ANF generate fused affinity matrices
 Let's use ANF to generate fused affinity matrices for clustering these five cancer types into their own disease types. Except kidney cancer, which has three disease types, all four cancer types each have two disease types. 
 Since we have three view, there are seven combinations.
-```{r}
+```{r, eval=FALSE}
 data_types = c("fpkm","mirnas","methy450")
 tmp = lapply(1:length(data_types), function(i) combn(data_types, i))
 data_types_combn = list()
