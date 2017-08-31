@@ -3,7 +3,11 @@ title: "Complex Object (Patient) Clustering with Multi-view Data Using ANF"
 author: "Tianle Ma"
 date: "`r BiocStyle::doc_date()`"
 abstract: Cancer genomics projects have generated tons of multi-omic data. Integrating multi-omic data for patient clustering and cancer subtyping is an important and challenging task. Based a popular method, Similarity Network Fusion (SNF), we present Affinity Network Fusion (ANF) that have several advantages over SNF. The package ANF provides methods for affinity matrix construction and fusion as well as spectral clustering. This vignette explains the basic usage of the package.
-output: rmarkdown::html_vignette
+output: 
+    rmarkdown::html_document:
+    highlight: pygments
+    toc: true
+    fig_width: 5
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
@@ -13,7 +17,7 @@ vignette: >
   <!-- This is the source document -->
   
   
-  ```{r setup, echo=FALSE, results="hide"}
+```{r setup, echo=FALSE, results="hide"}
 knitr::opts_chunk$set(tidy=FALSE, cache=TRUE,
 dev="png",
 message=FALSE, error=FALSE, warning=TRUE)
