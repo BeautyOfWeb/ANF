@@ -10,23 +10,32 @@ vignette: >
   %\VignetteEncoding{UTF-8}
   ---
   
-  **If you use ANF in published research, please cite:**
+  <!-- This is the source document -->
   
-  > Tianle Ma, Aidong Zhang,
-  > Integrate Multi-omic Data Using Affinity Network Fusion (ANF) for Cancer Patient Clustering, 
-  > https://arxiv.org/abs/1708.07136
   
-  # Basic usage of ANF package (demonstration with synthetic data)
-  
-  In the following, let's first generate a synthetic dataset and use it for demonstrating the basic usage of ANF.
-  
-  For complex objects (e.g., patients) with multi-view data, we can use a feature matrix representing each view. For example, gene expression matrix and miRNA expression matrix can represent two views of patients.
-  
-  In the following, rows of a feature matrix represent objects, and columns represent features. Note each feature matrix contains a number of features from a feature space (corresponding one view). We can concatenate all features together as we will experiment later. However, since features from different feature spaces are usually heterogeneous, it may be a good idea to analyze them in its own feature space first, and then combine the results later.
-  
-  ### Generating the first view (feature matrix) of 200 samples
-  For simplicity, let's generate the first view (matrix `feature1`) of 200 samples: 100 samples for class 1 (the first 100 rows of matrix `feature1`), and 100 samples for class 2 (the last 100 rows of matrix `feature1`), using multi-variate Gaussian distribution.
-  ```{r}
+  ```{r setup, echo=FALSE, results="hide"}
+knitr::opts_chunk$set(tidy=FALSE, cache=TRUE,
+dev="png",
+message=FALSE, error=FALSE, warning=TRUE)
+```	
+
+**If you use ANF in published research, please cite:**
+
+> Tianle Ma, Aidong Zhang,
+> Integrate Multi-omic Data Using Affinity Network Fusion (ANF) for Cancer Patient Clustering, 
+> https://arxiv.org/abs/1708.07136
+
+# Basic usage of ANF package (demonstration with synthetic data)
+
+In the following, let's first generate a synthetic dataset and use it for demonstrating the basic usage of ANF.
+
+For complex objects (e.g., patients) with multi-view data, we can use a feature matrix representing each view. For example, gene expression matrix and miRNA expression matrix can represent two views of patients.
+
+In the following, rows of a feature matrix represent objects, and columns represent features. Note each feature matrix contains a number of features from a feature space (corresponding one view). We can concatenate all features together as we will experiment later. However, since features from different feature spaces are usually heterogeneous, it may be a good idea to analyze them in its own feature space first, and then combine the results later.
+
+### Generating the first view (feature matrix) of 200 samples
+For simplicity, let's generate the first view (matrix `feature1`) of 200 samples: 100 samples for class 1 (the first 100 rows of matrix `feature1`), and 100 samples for class 2 (the last 100 rows of matrix `feature1`), using multi-variate Gaussian distribution.
+```{r}
 true.class = rep(c(1,2),each=100)
 feature.mat1 = MASS::mvrnorm(100, rep(0, 20), diag(runif(20,0.2,2)))
 feature.mat2 = MASS::mvrnorm(100, rep(0.5, 20), diag(runif(20,0.2,2)))
