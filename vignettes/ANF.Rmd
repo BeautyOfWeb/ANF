@@ -9,12 +9,12 @@ output:
     toc: true
     fig_width: 5
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{Cancer Patient Clustering with ANF}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-  ---
+---
   
-  <!-- This is the source document -->
+<!-- This is the source document -->
   
   
 ```{r setup, echo=FALSE, results="hide"}
