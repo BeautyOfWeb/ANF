@@ -5,9 +5,10 @@ Version: 0.99.1
 Author: Tianle Ma, Aidong Zhang
 Maintainer: Tianle Ma <tianlema@buffalo.edu>
 Description: This package is used for complex patient clustering by integrating multi-omic data through affinity network fusion.
-License: LGPL (>= 3)
+License: GPL-3
 VignetteBuilder: knitr
-Imports: igraph, Biobase, survival, MASS
-Suggests: SNFtool, knitr, rmarkdown
+Imports: igraph, Biobase, survival, MASS, stats, RColorBrewer
+Suggests: ExperimentHub, SNFtool, knitr, rmarkdown,
+    testthat
 biocViews: Clustering, GraphAndNetwork, Network
 RoxygenNote: 6.0.1

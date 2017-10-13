@@ -3,21 +3,21 @@
 \name{kNN_graph}
 \alias{kNN_graph}
 \title{Calculate k-nearest-neighbor graph from affinity matrix
-normalize it as transition matrix}
+and normalize it as transition matrix}
 \usage{
 kNN_graph(W, K)
 }
 \arguments{
-\item{W}{affinity matrix}
+\item{W}{affinity matrix (its elements are non-negative real numbers)}
 
 \item{K}{the number of k nearest neighbors}
 }
 \value{
-an transition matrix of the same shape as W
+a transition matrix of the same shape as W
 }
 \description{
 Calculate k-nearest-neighbor graph from affinity matrix
-normalize it as transition matrix
+and normalize it as transition matrix
 }
 \examples{
 D = matrix(runif(400),20)

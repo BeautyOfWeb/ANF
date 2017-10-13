@@ -4,14 +4,20 @@
 \alias{spectral_clustering}
 \title{spectral_clustering}
 \usage{
-spectral_clustering(A, k, type = 2, verbose = FALSE)
+spectral_clustering(A, k, type = c("rw", "sym", "unnormalized"),
+  verbose = FALSE)
 }
 \arguments{
 \item{A}{affinity matrix}
 
 \item{k}{the number of clusters}
 
-\item{type}{choice of normalized graph Laplacian}
+\item{type}{choose one of three versions of graph Laplacian:
+"unnormalized": unnormalized graph Laplacian matrix (L = D - W);
+"rw": normalization closely related to random walk (L = I - D^(-1)*W); (default choice)
+"sym": normalized symmetric matrix (L = I - D^(-0.5) * W * D^(-0.5))
+For more information: 
+https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf}
 
 \item{verbose}{Boolean; if true, print user-friendly information}
 }
@@ -22,7 +28,7 @@ a numeric vector as class labels
 spectral_clustering
 }
 \examples{
-D = matrix(runif(400),20)
+D = matrix(runif(400), nrow = 20)
 A = affinity_matrix(D, 5)
-labels = spectral_clustering(A, 2)
+labels = spectral_clustering(A, k=2)
 }

@@ -7,12 +7,19 @@
 pod(Y, verbose = FALSE)
 }
 \arguments{
-\item{Y}{first k eigenvectors of graph Laplacian corresponding to k smallest eigenvalues}
+\item{Y}{a matrix with N rows and K columns, with N being 
+the number of objects (e.g., patients), K being the number 
+of clusters. The K columns of `Y` should correspond to 
+the first k eigenvectors of graph Laplacian matrix 
+(of affinity matrix) corresponding to the k smallest eigenvalues}
 
 \item{verbose}{Boolean; if true, print some information}
 }
 \value{
-class assignment matrix (0-1)
+class assignment matrix with the same shape as Y
+(i.e., N x K). Each row contains all zeros except one 1. 
+For instance, if X_ij = 1, then object (eg, patient) i belongs
+to cluster j.
 }
 \description{
 Finding optimal discrete solutions for spectral clustering
@@ -22,11 +29,14 @@ D = matrix(runif(400),20)
 A = affinity_matrix(D, 5)
 d = rowSums(A)
 L = diag(d) - A
+# `NL` is graph Laplacian of affinity matrix `A`
 NL = diag(1/d) \%*\% L
 e = eigen(NL)
+# Here we select eigenvectors corresponding to three smallest eigenvalues 
 Y = Re(e$vectors[,-1:-17])
 X = pod(Y)
 }
 \references{
-Stella, X. Yu, and Jianbo Shi. "Multiclass spectral clustering." ICCV. IEEE, 2003.
+Stella, X. Yu, and Jianbo Shi. 
+"Multiclass spectral clustering." ICCV. IEEE, 2003.
 }

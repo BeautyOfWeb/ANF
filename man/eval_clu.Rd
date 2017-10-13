@@ -2,20 +2,21 @@
 % Please edit documentation in R/SpectralClustering.R
 \name{eval_clu}
 \alias{eval_clu}
-\title{Evaluate cluster result}
+\title{Evaluate clustering result}
 \usage{
 eval_clu(true_class, w = NULL, d = NULL, k = 10, num_clu = NULL,
-  surv = NULL, type_L = 2, verbose = TRUE)
+  surv = NULL, type_L = c("rw", "sym", "unnormalized"), verbose = TRUE)
 }
 \arguments{
 \item{true_class}{A named vector of true class labels}
 
 \item{w}{affinity matrix}
 
-\item{d}{distance matrix; 
+\item{d}{distance matrix
 if w is NULL, calcuate w using d}
 
-\item{k}{an integer; if w is null, w = affinity_matrix(d, k)}
+\item{k}{an integer, default 10; if w is null, w = affinity_matrix(d, k);
+otherwise unused.}
 
 \item{num_clu}{an integer; number of clusters; 
 if NULL, set num_clu to be the number of classes using true_class}
@@ -23,21 +24,32 @@ if NULL, set num_clu to be the number of classes using true_class}
 \item{surv}{a data.frame with at least two columns: 
 time (days_to_death or days_to_last_follow_up), and censored (Boolean)}
 
-\item{type_L}{an integer of 1, 2, or 3; choice of normalized graph Laplacian}
+\item{type_L}{(parameter passed to spectral_clustering: `type`)
+choose one of three versions of graph Laplacian:
+"unnormalized": unnormalized graph Laplacian matrix (L = D - W);
+"rw": normalization closely related to random walk (L = I - D^(-1)*W); (default choice)
+"sym": normalized symmetric matrix (L = I - D^(-0.5) * W * D^(-0.5))
+For more information: 
+https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf}
 
 \item{verbose}{Boolean; if true, print some information}
 }
 \value{
-a vector of Normalized Mutual Informatin (NMI), Adjusted Rand Index (ARI),
-and -log10(p) of log rank test of survival distributions of patient clusters
+a named list of size 3: 
+"w": affinity matrix used for spectral_clustering;
+"clu.res": a named vector of calculated "NMI" (normalized mutual information), 
+"ARI" (Adjusted Rand Index), and "-log10(p)" of log rank test of 
+survival distributions of patient clusters;
+"labels: a numeric vector as class labels
 }
 \description{
-Evaluate cluster result
+Evaluate clustering result
 }
 \examples{
-true.class = rep(c(1,2),each=100)
-feature.mat1 = MASS::mvrnorm(100, rep(0, 20), diag(runif(20,0.2,2)))
-feature.mat2 = MASS::mvrnorm(100, rep(0.5, 20), diag(runif(20,0.2,2)))
+library(MASS)
+true.class = rep(c(1,2), each=100)
+feature.mat1 = mvrnorm(100, rep(0, 20), diag(runif(20,0.2,2)))
+feature.mat2 = mvrnorm(100, rep(0.5, 20), diag(runif(20,0.2,2)))
 feature1 = rbind(feature.mat1, feature.mat2)
 d = dist(feature1)
 d = as.matrix(d)
