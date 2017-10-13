@@ -105,9 +105,9 @@ compare(labels, true.class, method='nmi')
 ```
 
 
-# Apply ANF to TCGA data (Reproduce results of companion paper: https://arxiv.org/abs/1708.07136)
+# Apply ANF to harmonized TCGA dataset
 
-### Load data 
+## Load data 
 `HarmonizedTCGAData` package (https://github.com/BeautyOfWeb/HarmonizedTCGAData) contains three R objects: `Wall`, `project_ids` and `surv.plot`:
 
 `Wall` contains a complex list affinity matrices. In fact, `Wall` a list (five cancer type) of list (six feature normalization types: `raw.all`, `raw.sel`, `log.all`, `log.sel`,  `vst.sel`, `normalized`) of list (three feature spaces or views: `fpkm`, `mirna`, and `methy450`) of matrices. The rownames of each matrix are case IDs (i.e., patient IDs), and the column names of each matrix are aliquot IDs (which contains case IDs as prefix). 
@@ -128,16 +128,23 @@ Wall <- myfiles[[1]]
 project_ids <- myfiles[[2]]
 surv.plot <- myfiles[[3]]
 
-cancer_types = names(Wall)
-feature_types = names(Wall[[1]])
-data_types = names(Wall[[1]][[1]])
+# A simple example of how to use `ANF` (more details are in HarmonizedTCGAData package)
+fused.mat <- ANF(Wall = Wall$adrenal_gland$raw.all)
+res <- eval_clu(true_class = project_ids[rownames(fused.mat)], w = fused.mat, surv = surv.plot, verbose = TRUE)
 ```
+
+
+## Reproduce results of companion paper: https://arxiv.org/abs/1708.07136
+The code below is not directly relevant to using functions in this package, but for the purpose of reproduction research. Users can skip this part. This part will take more than 10 minutes to run. We set `eval=FALSE` in code blocks below.
 
 ### Use ANF generate fused affinity matrices
 Let's use ANF to generate fused affinity matrices for clustering these five cancer types into their own disease types. Except kidney cancer, which has three disease types, all four other cancer types each have two disease types. 
 Since we have three view (i.e., gene expression, miRNA expression and DNA methylation), there are seven combinations.
 ```{r}
-data_types = c("fpkm", "mirnas", "methy450")
+cancer_types = names(Wall)
+feature_types = names(Wall[[1]])
+data_types = names(Wall[[1]][[1]])
+
 tmp = lapply(1:length(data_types), function(i) combn(data_types, i))
 data_types_combn = list()
 for (i in tmp){
@@ -149,7 +156,7 @@ data_types_combn
 ```
 
 We can run ANF for all 210 possible combinations (i.e., five cancer_types, six feature normalization measures, and seven data combinations) using three `for` loops below, and store the results ("NMI", "ARI" and "-log10(pvalue)") in `res.ANF` (for plotting figures later), and store the fused affinity matrices in `Ws.ANF`. Note this takes at least several minutes.
-```{r}
+```{r, eval=FALSE}
 library(survival)
 Ws.ANF = list()
 res.ANF = list()
@@ -175,7 +182,7 @@ for (cancer_type in cancer_types) {
 Our experiment results show that p-value of log-rank test of survival distributions of different disease types should not be used as the single metric to evaluate cancer patient clustering results. 
 
 It is not always the case that the p-value of log-rank test of survival distribution of patient groups assigned using true disease type information is the smallest. In fact, when we use groundtruth class labels for survival analysis, the p-values for lung and colerectal cancer (both have two disease types) do not reach statistical levels at all.
-```{r}
+```{r, eval=FALSE}
 # sample_list will store a list of named characters corresponding to case_ids in each cancer type
 sample_list = list()
 logpval_trueclass = list()
@@ -195,13 +202,12 @@ for (cancer_type in cancer_types){
 logpval_trueclass = unlist(logpval_trueclass)
 ```
 
-## Reproduce the figures in the companion paper https://arxiv.org/abs/1708.07136 (The code below is not directly relevant to using functions in this package, but for purpose of reproduction research. Users can skip this part)
 
 Now we have `res.ANF` which is a complex list. It is very hard to plot `res.ANF` in one figure since it contains multiple aspects of results. Instead, we will choose different "viewpoints" of `res.ANF` to to draw figures to demonstrate the power of ANF and feature engineering in the following.
 
 ### Demonstate the power of ANF 
 Now let's examine the power of ANF. First let's rearrange `res.ANF` into `power.anf` that is easier to use for plotting figures in this section.
-```{r}
+```{r, eval=FALSE}
 library(RColorBrewer)
 metric_names = c("NMI", "ARI", "-log10(p)")
 power.anf = list()
@@ -216,7 +222,7 @@ for (idx_feature in seq_len(length(feature_types))) {
 ```
 
 Plot figures and save them in folder "./figs/power_of_ANF/".
-```{r}
+```{r, eval=FALSE}
 # Did not show colorectal cancer, since all possible clustering does not achieve a good NMI or ARI. Presumbly for colorectal cancer, the two disease types cannot be separated by gene and miRNA expression and DNA methylation data. Survival analysis also show no significant difference between the two disease types.
 # Excluding colorectal cancer index (i.e., 5)
 idx_cancer = c(1,2,4,3)
@@ -251,7 +257,7 @@ for (idx_feature in seq_len(length(feature_types))) {
 
 ### Demonstate the power of feature engineering
 Again let's first rearrange `res.ANF` to `power.feature` for plotting purpose.
-```{r}
+```{r, eval=FALSE}
 res = res.ANF
 cancer_types = names(res)
 feature_types = names(res[[1]])
@@ -271,7 +277,7 @@ for (idx_view in idx_views) {
 
 
 Plot and then save figures in "./figs/power_of_FeatureEngineering".
-```{r}
+```{r, eval=FALSE}
 # Again we exclude colorectal cancer (index: 5) in the figures
 idx_cancers = c(1,2,4,3)
 # reorder the indexes this way so that it is consistent with the figures shown in the companion paper
