@@ -156,14 +156,14 @@ data_types_combn
 ```
 
 We can run ANF for all 210 possible combinations (i.e., five cancer_types, six feature normalization measures, and seven data combinations) using three `for` loops below, and store the results ("NMI", "ARI" and "-log10(pvalue)") in `res.ANF` (for plotting figures later), and store the fused affinity matrices in `Ws.ANF`. Note this takes at least several minutes.
-```{r, eval=FALSE}
+```{r}
 library(survival)
 Ws.ANF = list()
 res.ANF = list()
 for (cancer_type in cancer_types) {
     for (feature_type in feature_types) {
         for (data_type in names(data_types_combn)) {
-            print(paste(cancer_type, feature_type, data_type))
+            message(paste(cancer_type, feature_type, data_type))
             # Using ANF to fuse a list of affinity matrices
             W = ANF(Wall[[cancer_type]][[feature_type]][data_types_combn[[data_type]]], K=15)
             # Evaluate clustering result
@@ -182,7 +182,7 @@ for (cancer_type in cancer_types) {
 Our experiment results show that p-value of log-rank test of survival distributions of different disease types should not be used as the single metric to evaluate cancer patient clustering results. 
 
 It is not always the case that the p-value of log-rank test of survival distribution of patient groups assigned using true disease type information is the smallest. In fact, when we use groundtruth class labels for survival analysis, the p-values for lung and colerectal cancer (both have two disease types) do not reach statistical levels at all.
-```{r, eval=FALSE}
+```{r}
 # sample_list will store a list of named characters corresponding to case_ids in each cancer type
 sample_list = list()
 logpval_trueclass = list()
@@ -194,8 +194,8 @@ for (cancer_type in cancer_types){
     f = Surv(surv$time, !surv$censored)
     fit = survdiff(f~labels)
     pval = pchisq(fit$chisq, df=length(fit$n)-1, lower.tail = FALSE)
-    print(cancer_type)
-    print(-log10(pval))
+    message(cancer_type)
+    message(-log10(pval))
     logpval_trueclass[[cancer_type]] = -log10(pval)
 }
 # logpval_trueclass is a numeric vector of five numbers, i.e., -log10(pval) for survival analysis using true disease label information. (Used for plotting figures later)
@@ -207,7 +207,7 @@ Now we have `res.ANF` which is a complex list. It is very hard to plot `res.ANF`
 
 ### Demonstate the power of ANF 
 Now let's examine the power of ANF. First let's rearrange `res.ANF` into `power.anf` that is easier to use for plotting figures in this section.
-```{r, eval=FALSE}
+```{r}
 library(RColorBrewer)
 metric_names = c("NMI", "ARI", "-log10(p)")
 power.anf = list()
@@ -222,7 +222,7 @@ for (idx_feature in seq_len(length(feature_types))) {
 ```
 
 Plot figures and save them in folder "./figs/power_of_ANF/".
-```{r, eval=FALSE}
+```{r}
 # Did not show colorectal cancer, since all possible clustering does not achieve a good NMI or ARI. Presumbly for colorectal cancer, the two disease types cannot be separated by gene and miRNA expression and DNA methylation data. Survival analysis also show no significant difference between the two disease types.
 # Excluding colorectal cancer index (i.e., 5)
 idx_cancer = c(1,2,4,3)
@@ -257,7 +257,7 @@ for (idx_feature in seq_len(length(feature_types))) {
 
 ### Demonstate the power of feature engineering
 Again let's first rearrange `res.ANF` to `power.feature` for plotting purpose.
-```{r, eval=FALSE}
+```{r}
 res = res.ANF
 cancer_types = names(res)
 feature_types = names(res[[1]])
@@ -277,7 +277,7 @@ for (idx_view in idx_views) {
 
 
 Plot and then save figures in "./figs/power_of_FeatureEngineering".
-```{r, eval=FALSE}
+```{r}
 # Again we exclude colorectal cancer (index: 5) in the figures
 idx_cancers = c(1,2,4,3)
 # reorder the indexes this way so that it is consistent with the figures shown in the companion paper
