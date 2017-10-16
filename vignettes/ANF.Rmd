@@ -127,182 +127,62 @@ myfiles <- query(eh, "HarmonizedTCGAData")
 Wall <- myfiles[[1]]
 project_ids <- myfiles[[2]]
 surv.plot <- myfiles[[3]]
-
-# A simple example of how to use `ANF` (more details are in HarmonizedTCGAData package)
-fused.mat <- ANF(Wall = Wall$adrenal_gland$raw.all)
-res <- eval_clu(true_class = project_ids[rownames(fused.mat)], w = fused.mat, surv = surv.plot, verbose = TRUE)
 ```
 
-
-## Reproduce results of companion paper: https://arxiv.org/abs/1708.07136
-The code below is not directly relevant to using functions in this package, but for the purpose of reproduction research. Users can skip this part. This part will take more than 10 minutes to run. We set `eval=FALSE` in code blocks below.
-
-### Use ANF generate fused affinity matrices
-Let's use ANF to generate fused affinity matrices for clustering these five cancer types into their own disease types. Except kidney cancer, which has three disease types, all four other cancer types each have two disease types. 
-Since we have three view (i.e., gene expression, miRNA expression and DNA methylation), there are seven combinations.
+## Spectral clustering using affinity matrices
+We can perform spectral clustering on a patient affinity matrix.
+Take adrend_gland cancer for example. We can cluseter patients using affinity matrix derived from log2 transformation of raw counts of differentially expressed genes.
 ```{r}
-cancer_types = names(Wall)
-feature_types = names(Wall[[1]])
-data_types = names(Wall[[1]][[1]])
-
-tmp = lapply(1:length(data_types), function(i) combn(data_types, i))
-data_types_combn = list()
-for (i in tmp){
-    for(j in 1:ncol(i)){
-        data_types_combn[[paste(i[,j],collapse = ".")]] = i[,j]
-    }
-}
-data_types_combn
+affinity.mat <- Wall[["adrenal_gland"]][["log.sel"]][["fpkm"]]
+labels <- spectral_clustering(affinity.mat, k = 2)
 ```
 
-We can run ANF for all 210 possible combinations (i.e., five cancer_types, six feature normalization measures, and seven data combinations) using three `for` loops below, and store the results ("NMI", "ARI" and "-log10(pvalue)") in `res.ANF` (for plotting figures later), and store the fused affinity matrices in `Ws.ANF`. Note this takes at least several minutes.
+Since we know true disease types, which correspond to project ids in `project_ids`, we can calculate NMI and ARI.
 ```{r}
-library(survival)
-Ws.ANF = list()
-res.ANF = list()
-for (cancer_type in cancer_types) {
-    for (feature_type in feature_types) {
-        for (data_type in names(data_types_combn)) {
-            message(paste(cancer_type, feature_type, data_type))
-            # Using ANF to fuse a list of affinity matrices
-            W = ANF(Wall[[cancer_type]][[feature_type]][data_types_combn[[data_type]]], K=15)
-            # Evaluate clustering result
-            clu.res = eval_clu(project_ids, w=W, surv = surv.plot)
-            # Save fused affinity matrix
-            Ws.ANF[[cancer_type]][[feature_type]][[data_type]] = W
-            # Save "NMI", "ARI", and "-log10(pvalue)"
-            res.ANF[[cancer_type]][[feature_type]][[data_type]] = clu.res$clu.res
-        }
-    }
-}
+true.disease.types <- as.factor(project_ids[rownames(affinity.mat)])
+print(table(labels, true.disease.types))
+
+nmi <- igraph::compare(true.disease.types, labels, method = "nmi")
+
+adjusted.rand = igraph::compare(true.disease.types, labels, method = "adjusted.rand")
+
+# we can also calculate p-value using `surv.plot` data
+surv.plot <- surv.plot[rownames(affinity.mat), ]
+f <- survival::Surv(surv.plot$time, !surv.plot$censored)
+fit <- survival::survdiff(f ~ labels)
+pval <- stats::pchisq(fit$chisq, df = length(fit$n) - 1, lower.tail = FALSE)
+
+message(paste("NMI =", nmi, ", ARI =", adjusted.rand, ", p-val =", pval))
 ```
 
+In this package, We have provided a function `eval_clu` that streamlines the above process from spectral clustering to calculating NMI, ARI and p-value. Here is an example of how to use `eval_clu`:
 
-### p-value of log rank test of survival distributions alone is not sufficient for evaluating cluster quality
-Our experiment results show that p-value of log-rank test of survival distributions of different disease types should not be used as the single metric to evaluate cancer patient clustering results. 
-
-It is not always the case that the p-value of log-rank test of survival distribution of patient groups assigned using true disease type information is the smallest. In fact, when we use groundtruth class labels for survival analysis, the p-values for lung and colerectal cancer (both have two disease types) do not reach statistical levels at all.
 ```{r}
-# sample_list will store a list of named characters corresponding to case_ids in each cancer type
-sample_list = list()
-logpval_trueclass = list()
-for (cancer_type in cancer_types){
-    sample_list[[cancer_type]] = rownames(Ws.ANF[[cancer_type]][[1]][[1]])
-    # project_ids contains disease type information 
-    labels = as.factor(project_ids[sample_list[[cancer_type]]])
-    surv = surv.plot[sample_list[[cancer_type]],]
-    f = Surv(surv$time, !surv$censored)
-    fit = survdiff(f~labels)
-    pval = pchisq(fit$chisq, df=length(fit$n)-1, lower.tail = FALSE)
-    message(cancer_type)
-    message(-log10(pval))
-    logpval_trueclass[[cancer_type]] = -log10(pval)
-}
-# logpval_trueclass is a numeric vector of five numbers, i.e., -log10(pval) for survival analysis using true disease label information. (Used for plotting figures later)
-logpval_trueclass = unlist(logpval_trueclass)
+res <- eval_clu(project_ids, w = affinity.mat, surv = surv.plot)
 ```
 
+For adrenal_gland cancer, we only misclassify one out of 253 patients using this affinity matrix. That is a pretty good result (In fact, this the best result we can achieve. Users can try using other matrices and compare the results). However, for many cases, using a single affinity matrix does a "terrible" job in clustering patients into correct disease types. Take uterus cancer for example (the NMI is near 0).
 
-Now we have `res.ANF` which is a complex list. It is very hard to plot `res.ANF` in one figure since it contains multiple aspects of results. Instead, we will choose different "viewpoints" of `res.ANF` to to draw figures to demonstrate the power of ANF and feature engineering in the following.
-
-### Demonstate the power of ANF 
-Now let's examine the power of ANF. First let's rearrange `res.ANF` into `power.anf` that is easier to use for plotting figures in this section.
 ```{r}
-library(RColorBrewer)
-metric_names = c("NMI", "ARI", "-log10(p)")
-power.anf = list()
-res = res.ANF
-for (idx_feature in seq_len(length(feature_types))) {
-    for (idx_metric in seq_len(length(metric_names))) {
-        xtab = array(unlist(res), dim=c(length(res[[1]][[1]][[1]]), length(res[[1]][[1]]), length(res[[1]]), length(res)), dimnames = list(metric_names, names(res[[1]][[1]]), names(res[[1]]), names(res)))
-        
-        power.anf[[feature_types[idx_feature]]][[metric_names[idx_metric]]] = xtab[idx_metric, names(res[[1]][[1]]), idx_feature, cancer_types]
-    }
-}
+res <- eval_clu(project_ids, w = Wall$uterus$raw.all$fpkm)
 ```
 
-Plot figures and save them in folder "./figs/power_of_ANF/".
+
+## Use ANF to fuse multiple affinity matrices for patient clustering
+
+Instead of using one affinity matrix, we can "fuse" multiple affinity matrices using ANF, and then perform spectral clustering on the fused affinity matrix.
+
+Let's take uterus cancer for example.
 ```{r}
-# Did not show colorectal cancer, since all possible clustering does not achieve a good NMI or ARI. Presumbly for colorectal cancer, the two disease types cannot be separated by gene and miRNA expression and DNA methylation data. Survival analysis also show no significant difference between the two disease types.
-# Excluding colorectal cancer index (i.e., 5)
-idx_cancer = c(1,2,4,3)
-
-if(!dir.exists("./figs/power_of_ANF/")) {
-    dir.create("./figs/power_of_ANF/", recursive = TRUE)
-}
-figfolder = "./figs/power_of_ANF/"
-
-for (idx_feature in seq_len(length(feature_types))) {
-    for (idx_metric in seq_len(length(metric_names))) {
-        metric = power.anf[[idx_feature]][[idx_metric]][,idx_cancer]
-        rownames(metric) = c("gene", "mirnas", "methylation", "gene+mirnas","gene+methylation","mirnas+methylation","gene+mirnas+methylation")
-        if (idx_metric!=3) {
-            # Plot figures for metric "NMI" and "ARI"
-            png(filename = paste0(figfolder,"power_ANF_", feature_types[idx_feature], "_", metric_names[idx_metric],".png"), height = 900, width = 1600, res = 150)
-            barplot(metric, beside = TRUE, col = brewer.pal(nrow(metric), "Set1"), legend.text = TRUE, xlim=c(0,40), ylim = c(0,1),args.legend = list(x = 35, y=1.1,bty = "n"), ylab = metric_names[idx_metric], main = paste("FeatureType:", feature_types[idx_feature]))
-            dev.off()
-        } else {
-            # Plot figures for metric "-log10(p-value)"
-            # Add one bar "TrueClass" for each cancer type
-            neg_log_p = rbind(metric, logpval_trueclass[colnames(metric)])
-            rownames(neg_log_p)[nrow(neg_log_p)] = "TrueClass"
-            png(filename = paste0(figfolder,"power_ANF_", feature_types[idx_feature], "_pval.png"), height = 900, width = 1600, res = 150)
-            barplot(neg_log_p, beside = TRUE, col = brewer.pal(nrow(neg_log_p), "Set1"), legend.text = TRUE, xlim=c(0,40), ylim=c(0,13), args.legend = list(x = 17,y=14,bty = "n"), ylab = metric_names[idx_metric], main = paste("FeatureType:", feature_types[idx_feature]))
-            dev.off()
-        }
-    }
-}
+# fuse three matrices: "fpkm" (gene expression), "mirnas" (miRNA expression) and "methy450" (DNA methylation)
+fused.mat <- ANF(Wall = Wall$uterus$raw.all)
+# Spectral clustering on fused patient affinity matrix
+labels <- spectral_clustering(A = fused.mat, k = 2)
+# Or we can directly evaluate clustering results using function `eval_clu`, which calls `spectral_clustering` and calculate NMI and ARI (and p-value if patient survival data is available. `surv.plot` does not contain information for uterus cancer patients)
+res <- eval_clu(true_class = project_ids[rownames(fused.mat)], w = fused.mat)
 ```
 
+Now NMI is 0.485. The clusering results is significantly better than using a single pateint affinity matrix. This demonstrates the power of ANF.
 
-### Demonstate the power of feature engineering
-Again let's first rearrange `res.ANF` to `power.feature` for plotting purpose.
-```{r}
-res = res.ANF
-cancer_types = names(res)
-feature_types = names(res[[1]])
-data_types = names(res[[1]][[1]])
-metric_names = c("NMI", "ARI", "-log10(p)")
-
-power.feature = list()
-idx_views = c(1,2,4)
-view_names = c("gene expression", "miRNA expression", "gene+miRNA")
-for (idx_view in idx_views) {
-    for (idx_metric in 1:length(metric_names)) {
-        xtab = array(unlist(res), dim=c(length(res[[1]][[1]][[1]]), length(res[[1]][[1]]), length(res[[1]]), length(res)), dimnames = list(metric_names, names(res[[1]][[1]]), names(res[[1]]), names(res)))
-        power.feature[[data_types[idx_view]]][[metric_names[idx_metric]]] = xtab[idx_metric, idx_view, feature_types, cancer_types]
-    }
-}
-```
-
-
-Plot and then save figures in "./figs/power_of_FeatureEngineering".
-```{r}
-# Again we exclude colorectal cancer (index: 5) in the figures
-idx_cancers = c(1,2,4,3)
-# reorder the indexes this way so that it is consistent with the figures shown in the companion paper
-idx_features = c(1,6,2:5)
-if(!dir.exists("./figs/power_of_FeatureEngineering/")) {
-    dir.create("./figs/power_of_FeatureEngineering/", recursive = TRUE)
-}
-figfolder = "./figs/power_of_FeatureEngineering/"
-
-for (idx_view in 1:length(idx_views)) {
-    for (idx_metric in 1:length(metric_names)) {
-        metric = power.feature[[idx_view]][[idx_metric]][idx_features,idx_cancers]
-        if (idx_metric!=3) {
-            # Plot figures for "NMI" and "ARI"
-            png(filename = paste0(figfolder,"power_feature_", data_types[idx_views[idx_view]], "_", metric_names[idx_metric],".png"), height = 900, width = 1600, res = 150)
-            barplot(metric, beside = TRUE, col = brewer.pal(nrow(metric), "Set1"), legend.text = TRUE, xlim=c(0,30), ylim=c(0,1), args.legend = list(x=30,y=1, bty = "n"), ylab = metric_names[idx_metric], main = paste("DataType(s):", view_names[idx_view]))
-            dev.off()
-        } else {
-            # Plot figures for "-log10(p-value)"
-            neg_log_p = rbind(metric, logpval_trueclass[colnames(metric)])
-            rownames(neg_log_p)[nrow(neg_log_p)] = "TrueClass"
-            png(filename = paste0(figfolder,"power_feature_", data_types[idx_views[idx_view]], "_pval.png"), height = 900, width = 1600, res = 150)
-            barplot(neg_log_p, beside = TRUE, col = brewer.pal(nrow(neg_log_p), "Set1"), legend.text = TRUE, xlim=c(0,35),  ylim=c(0,12), args.legend = list(x=20,y=13, bty = "n"), ylab = metric_names[idx_metric], main = paste("DataType(s):", view_names[idx_view]))
-            dev.off()
-        }
-    }
-}
-```
+We have majorly used ANF to produce results in this paper: https://arxiv.org/abs/1708.07136
+To reproduce the results, please refer to https://github.com/BeautyOfWeb/Clustering-TCGAFiveCancerTypes/blob/master/vignettes/ANF%20for%20Cancer%20Patient%20Clustering.Rmd (the last section).
