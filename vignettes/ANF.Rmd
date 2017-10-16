@@ -140,7 +140,7 @@ labels <- spectral_clustering(affinity.mat, k = 2)
 Since we know true disease types, which correspond to project ids in `project_ids`, we can calculate NMI and ARI.
 ```{r}
 true.disease.types <- as.factor(project_ids[rownames(affinity.mat)])
-print(table(labels, true.disease.types))
+table(labels, true.disease.types)
 
 nmi <- igraph::compare(true.disease.types, labels, method = "nmi")
 
