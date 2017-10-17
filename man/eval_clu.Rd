@@ -22,7 +22,7 @@ otherwise unused.}
 if NULL, set num_clu to be the number of classes using true_class}
 
 \item{surv}{a data.frame with at least two columns: 
-time (days_to_death or days_to_last_follow_up), and censored (Boolean)}
+time (days_to_death or days_to_last_follow_up), and censored (logical(1))}
 
 \item{type_L}{(parameter passed to spectral_clustering: `type`)
 choose one of three versions of graph Laplacian:
@@ -32,7 +32,7 @@ choose one of three versions of graph Laplacian:
 For more information: 
 https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf}
 
-\item{verbose}{Boolean; if true, print some information}
+\item{verbose}{logical(1); if true, print some information}
 }
 \value{
 a named list of size 3: 

@@ -13,7 +13,7 @@ of clusters. The K columns of `Y` should correspond to
 the first k eigenvectors of graph Laplacian matrix 
 (of affinity matrix) corresponding to the k smallest eigenvalues}
 
-\item{verbose}{Boolean; if true, print some information}
+\item{verbose}{logical(1); if true, print some information}
 }
 \value{
 class assignment matrix with the same shape as Y

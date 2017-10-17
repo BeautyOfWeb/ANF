@@ -19,7 +19,7 @@ spectral_clustering(A, k, type = c("rw", "sym", "unnormalized"),
 For more information: 
 https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf}
 
-\item{verbose}{Boolean; if true, print user-friendly information}
+\item{verbose}{logical(1); if true, print user-friendly information}
 }
 \value{
 a numeric vector as class labels

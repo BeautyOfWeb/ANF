@@ -28,7 +28,7 @@ of `type`) random walk is used. `alpha` is the weights for eight terms in the
 the terms). Default value: (1, 1, 0, 0, 0, 0, 0, 0), i.e., only use the 
 first two terms (since they are most effective in practice).}
 
-\item{verbose}{Boolean; if true, print some information}
+\item{verbose}{logical(1); if true, print some information}
 }
 \value{
 a fused transition matrix (representing a fused network)

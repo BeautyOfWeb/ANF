@@ -43,7 +43,7 @@ affinity_matrix <- function(D, k, alpha=1/6, beta=1/6)
 #' of clusters. The K columns of `Y` should correspond to 
 #' the first k eigenvectors of graph Laplacian matrix 
 #' (of affinity matrix) corresponding to the k smallest eigenvalues
-#' @param verbose Boolean; if true, print some information
+#' @param verbose logical(1); if true, print some information
 #'
 #' @return class assignment matrix with the same shape as Y
 #' (i.e., N x K). Each row contains all zeros except one 1. 
@@ -111,7 +111,7 @@ pod = function(Y, verbose=FALSE) {
 #' "sym": normalized symmetric matrix (L = I - D^(-0.5) * W * D^(-0.5))
 #' For more information: 
 #' https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf
-#' @param verbose Boolean; if true, print user-friendly information
+#' @param verbose logical(1); if true, print user-friendly information
 #'
 #' @return a numeric vector as class labels
 #' @export
@@ -173,7 +173,7 @@ spectral_clustering <- function(A, k, type=c("rw", "sym", "unnormalized"),
 #' @param num_clu an integer; number of clusters; 
 #' if NULL, set num_clu to be the number of classes using true_class
 #' @param surv a data.frame with at least two columns: 
-#' time (days_to_death or days_to_last_follow_up), and censored (Boolean)
+#' time (days_to_death or days_to_last_follow_up), and censored (logical(1))
 #' @param type_L (parameter passed to spectral_clustering: `type`)
 #' choose one of three versions of graph Laplacian:
 #' "unnormalized": unnormalized graph Laplacian matrix (L = D - W);
@@ -181,7 +181,7 @@ spectral_clustering <- function(A, k, type=c("rw", "sym", "unnormalized"),
 #' "sym": normalized symmetric matrix (L = I - D^(-0.5) * W * D^(-0.5))
 #' For more information: 
 #' https://www.cs.cmu.edu/~aarti/Class/10701/readings/Luxburg06_TR.pdf
-#' @param verbose Boolean; if true, print some information
+#' @param verbose logical(1); if true, print some information
 #'
 #' @importFrom igraph compare
 #' @importFrom MASS mvrnorm

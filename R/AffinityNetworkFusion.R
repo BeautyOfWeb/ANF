@@ -48,7 +48,7 @@ kNN_graph = function(W, K) {
 #' "two-step" random walk formula (check research paper for more explanations about 
 #' the terms). Default value: (1, 1, 0, 0, 0, 0, 0, 0), i.e., only use the 
 #' first two terms (since they are most effective in practice).
-#' @param verbose Boolean; if true, print some information
+#' @param verbose logical(1); if true, print some information
 #' 
 #' @import Biobase
 #' @import RColorBrewer
