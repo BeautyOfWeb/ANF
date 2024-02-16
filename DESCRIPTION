@@ -1,7 +1,7 @@
 Package: ANF
 Type: Package
 Title: Affinity Network Fusion for Complex Patient Clustering
-Version: 0.99.6
+Version: 1.25.1
 Author: Tianle Ma, Aidong Zhang
 Maintainer: Tianle Ma <tianlema@buffalo.edu>
 Description: This package is used for complex patient clustering by integrating multi-omic data through affinity network fusion.
